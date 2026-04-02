@@ -9,11 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fontsource/noto-sans-kr": "^5.2.9",
     "@hookform/resolvers": "^5.2.2",
     "@notionhq/client": "^5.16.0",
+    "@react-pdf/renderer": "^4.3.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
