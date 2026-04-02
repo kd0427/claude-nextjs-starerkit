@@ -1,0 +1,66 @@
+// TODO: pnpm add prisma @prisma/client 설치 후 pnpm dlx prisma db push 실행
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // TODO: .env.local의 DATABASE_URL 연결
+  url      = env("DATABASE_URL")
+}
+
+// 어드민 사용자 (NextAuth.js User 모델과 연동)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // TODO: NextAuth.js Prisma Adapter 필요 필드 추가
+  // accounts Account[]
+  // sessions Session[]
+}
+
+// 견적서
+model Quote {
+  id            String      @id @default(cuid())
+  notionPageId  String      @unique
+  shareToken    String      @unique @default(cuid())
+  title         String
+  clientName    String
+  clientEmail   String?
+  subtotal      Int         // 원 단위
+  tax           Int
+  total         Int
+  status        QuoteStatus @default(DRAFT)
+  validUntil    DateTime?
+  memo          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items         QuoteItem[]
+}
+
+// 견적서 항목
+model QuoteItem {
+  id         String @id @default(cuid())
+  quoteId    String
+  name       String
+  unitPrice  Int
+  quantity   Int
+  amount     Int
+  note       String?
+  sortOrder  Int    @default(0)
+
+  quote      Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
