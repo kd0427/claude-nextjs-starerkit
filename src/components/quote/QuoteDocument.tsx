@@ -13,7 +13,7 @@ interface QuoteDocumentProps {
 /** 견적서 헤더 정보 컴포넌트 */
 export function QuoteDocument({ quote }: QuoteDocumentProps) {
   return (
-    <div id="quote-document" className="mb-8">
+    <div className="mb-8">
       {/* 견적서 최상단: 번호 + 상태 */}
       <div className="flex items-start justify-between mb-4">
         <div>

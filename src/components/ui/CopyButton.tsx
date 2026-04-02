@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 
@@ -9,7 +10,7 @@ interface CopyButtonProps {
   label?: string;
 }
 
-/** 클립보드 복사 버튼 - 복사 성공 시 아이콘 전환 */
+/** 클립보드 복사 버튼 - 복사 성공 시 아이콘 전환 + toast */
 export function CopyButton({ text, label = "복사" }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -17,6 +18,7 @@ export function CopyButton({ text, label = "복사" }: CopyButtonProps) {
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
+    toast.success("링크가 클립보드에 복사되었습니다");
     setTimeout(() => setCopied(false), 2000);
   };
 

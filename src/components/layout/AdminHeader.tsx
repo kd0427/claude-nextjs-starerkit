@@ -1,14 +1,14 @@
 "use client";
 
+import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
 /** 어드민 레이아웃 헤더 - 로그아웃 버튼 포함 */
 export function AdminHeader() {
-  /** 로그아웃 처리 (TASK-008에서 signOut() 연결 예정) */
+  /** 로그아웃 후 /login 으로 이동 */
   const handleSignOut = () => {
-    // TODO: signOut() - TASK-008에서 구현
-    console.log("로그아웃");
+    signOut({ callbackUrl: "/login" });
   };
 
   return (

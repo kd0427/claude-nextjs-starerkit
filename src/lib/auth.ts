@@ -1,27 +1,44 @@
-// TODO: NextAuth.js v5 (Auth.js) 설정
-// 설치: pnpm add next-auth@beta
-//
-// 필요한 환경변수:
-//   AUTH_SECRET          - openssl rand -base64 32 로 생성
-//   AUTH_GOOGLE_ID       - Google OAuth Client ID (선택)
-//   AUTH_GOOGLE_SECRET   - Google OAuth Client Secret (선택)
-//
-// 주요 구현 내용:
-// - Credentials Provider (이메일/비밀번호) 또는 OAuth Provider 설정
-// - Prisma Adapter 연결
-// - 세션 전략: JWT 또는 database
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 
-// TODO:
-// import NextAuth from "next-auth";
-// import { PrismaAdapter } from "@auth/prisma-adapter";
-// import { prisma } from "./prisma";
-//
-// export const { handlers, auth, signIn, signOut } = NextAuth({
-//   adapter: PrismaAdapter(prisma),
-//   providers: [
-//     // TODO: Provider 설정
-//   ],
-//   session: { strategy: "jwt" },
-// });
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers: [
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      /** 환경변수 기반 어드민 자격증명 검증 */
+      authorize(credentials) {
+        const email = credentials?.email as string;
+        const password = credentials?.password as string;
 
-export const auth = null; // TODO: 위 코드로 교체
+        if (
+          email === process.env.ADMIN_EMAIL &&
+          password === process.env.ADMIN_PASSWORD
+        ) {
+          return { id: "1", email, name: "Admin" };
+        }
+        return null;
+      },
+    }),
+  ],
+  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login",
+  },
+  callbacks: {
+    /** JWT에 user id 추가 */
+    jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    /** session에 user id 노출 */
+    session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
+});

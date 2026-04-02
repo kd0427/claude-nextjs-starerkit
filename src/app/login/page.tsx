@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v3";
@@ -18,6 +20,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 /** 어드민 로그인 페이지 */
 export default function LoginPage() {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -32,8 +35,18 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null);
     try {
-      // TODO: TASK-008에서 signIn("credentials", { ...data, redirect: false }) 구현
-      console.log("로그인 시도:", data.email);
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setServerError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        return;
+      }
+
+      router.push("/quotes");
     } catch {
       setServerError("로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");
     }

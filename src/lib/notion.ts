@@ -1,8 +1,29 @@
-import { Client } from "@notionhq/client";
+import { Client, APIResponseError } from "@notionhq/client";
 import type { Quote, QuoteItem, QuoteListItem } from "@/types";
 
 /** Notion API 클라이언트 싱글턴 */
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
+
+/**
+ * Notion API 레이트 리밋(429) 대응 exponential backoff 재시도 래퍼
+ * 최대 3회 재시도, 초기 대기 1초에서 2배씩 증가
+ */
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const isRateLimit = err instanceof APIResponseError && err.status === 429;
+      if (!isRateLimit || attempt === maxRetries) throw err;
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1000 * Math.pow(2, attempt))
+      );
+    }
+  }
+  throw lastError;
+}
 
 /** invoices DB ID */
 const INVOICES_DB_ID = process.env.NOTION_DATABASE_ID!;
@@ -134,30 +155,42 @@ function parseNotionItemPage(page: any): QuoteItem | null {
  * @notionhq/client v5: databases.query → dataSources.query + data_source_id
  */
 export async function getQuotes(): Promise<QuoteListItem[]> {
-  const response = await notion.dataSources.query({
-    data_source_id: INVOICES_DB_ID,
-    sorts: [{ property: NOTION_PROPERTY_MAP.quoteDate, direction: "descending" }],
-  });
+  try {
+    const response = await withRetry(() =>
+      notion.dataSources.query({
+        data_source_id: INVOICES_DB_ID,
+        sorts: [{ property: NOTION_PROPERTY_MAP.quoteDate, direction: "descending" }],
+      })
+    );
 
-  return response.results
-    .map(parseNotionPageToQuote)
-    .filter((q): q is QuoteListItem => q !== null);
+    return response.results
+      .map(parseNotionPageToQuote)
+      .filter((q): q is QuoteListItem => q !== null);
+  } catch {
+    return [];
+  }
 }
 
 /**
  * ShareToken으로 특정 견적서 조회
  */
 export async function getQuoteByShareToken(token: string): Promise<QuoteListItem | null> {
-  const response = await notion.dataSources.query({
-    data_source_id: INVOICES_DB_ID,
-    filter: {
-      property: NOTION_PROPERTY_MAP.shareToken,
-      rich_text: { equals: token },
-    },
-  });
+  try {
+    const response = await withRetry(() =>
+      notion.dataSources.query({
+        data_source_id: INVOICES_DB_ID,
+        filter: {
+          property: NOTION_PROPERTY_MAP.shareToken,
+          rich_text: { equals: token },
+        },
+      })
+    );
 
-  if (response.results.length === 0) return null;
-  return parseNotionPageToQuote(response.results[0]);
+    if (response.results.length === 0) return null;
+    return parseNotionPageToQuote(response.results[0]);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -165,29 +198,35 @@ export async function getQuoteByShareToken(token: string): Promise<QuoteListItem
  * invoices 페이지의 "항목" relation에서 item 페이지 ID를 꺼내 개별 조회
  */
 export async function getQuoteWithItems(notionPageId: string): Promise<Quote | null> {
-  const page = await notion.pages.retrieve({ page_id: notionPageId });
-  const quote = parseNotionPageToQuote(page);
-  if (!quote) return null;
+  try {
+    const page = await withRetry(() =>
+      notion.pages.retrieve({ page_id: notionPageId })
+    );
+    const quote = parseNotionPageToQuote(page);
+    if (!quote) return null;
 
-  // "항목" relation 필드에서 item 페이지 ID 목록 추출
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const props = (page as any).properties;
-  const relationProp = props[NOTION_PROPERTY_MAP.itemsRelation];
-  const itemPageIds: string[] =
-    relationProp?.type === "relation"
-      ? relationProp.relation.map((r: { id: string }) => r.id)
-      : [];
+    // "항목" relation 필드에서 item 페이지 ID 목록 추출
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const props = (page as any).properties;
+    const relationProp = props[NOTION_PROPERTY_MAP.itemsRelation];
+    const itemPageIds: string[] =
+      relationProp?.type === "relation"
+        ? relationProp.relation.map((r: { id: string }) => r.id)
+        : [];
 
-  // 각 item 페이지를 병렬로 조회
-  const itemPages = await Promise.all(
-    itemPageIds.map((id) => notion.pages.retrieve({ page_id: id }))
-  );
+    // 각 item 페이지를 병렬로 조회
+    const itemPages = await Promise.all(
+      itemPageIds.map((id) => notion.pages.retrieve({ page_id: id }))
+    );
 
-  const items = itemPages
-    .map(parseNotionItemPage)
-    .filter((item): item is QuoteItem => item !== null);
+    const items = itemPages
+      .map(parseNotionItemPage)
+      .filter((item): item is QuoteItem => item !== null);
 
-  return { ...quote, items };
+    return { ...quote, items };
+  } catch {
+    return null;
+  }
 }
 
 /**

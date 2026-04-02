@@ -1,19 +1,22 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+/** useSyncExternalStore 기반 클라이언트 마운트 감지 — 하이드레이션 안전 */
+const useIsMounted = () =>
+  useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
 /** 라이트/다크 테마 전환 버튼 */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // 하이드레이션 불일치 방지: 마운트 전까지 렌더링 지연
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsMounted();
 
   if (!mounted) {
     return (

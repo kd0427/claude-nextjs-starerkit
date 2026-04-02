@@ -1,28 +1,35 @@
 import { NextResponse } from "next/server";
-import type { ApiResponse } from "@/types";
-
-// TODO: 견적서 공유 링크 생성/조회 API
-// 1. NextAuth.js 세션 확인 (어드민 인증)
-// 2. quoteId로 DB에서 Quote 조회
-// 3. shareToken 없으면 신규 생성(uuid) 후 저장
-// 4. 공유 URL 반환: {baseUrl}/quote/{shareToken}
+import { auth } from "@/lib/auth";
+import { updateShareToken } from "@/lib/notion";
+import type { ApiResponse, ShareLinkResult } from "@/types";
 
 interface Params {
   params: Promise<{ id: string }>;
 }
 
-/** GET /api/quotes/[id]/share - 공유 링크 반환 */
-export async function GET(
-  _request: Request,
+/** POST /api/quotes/[id]/share — shareToken 생성 후 Notion 속성 업데이트 */
+export async function POST(
+  request: Request,
   { params }: Params
-): Promise<NextResponse<ApiResponse<{ shareUrl: string }>>> {
-  const { id } = await params;
+): Promise<NextResponse<ApiResponse<ShareLinkResult>>> {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  // TODO: 인증 확인
-  // TODO: Prisma 조회 및 shareToken 생성
+  const { id: notionPageId } = await params;
 
-  return NextResponse.json(
-    { success: false, error: `Not implemented for id: ${id}` },
-    { status: 501 }
-  );
+  const token = crypto.randomUUID();
+  const expiredAt = new Date();
+  expiredAt.setDate(expiredAt.getDate() + 30);
+
+  await updateShareToken(notionPageId, token, expiredAt);
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
+  const url = `${baseUrl}/quote/${token}`;
+
+  return NextResponse.json({
+    data: { url, token, expiredAt },
+  });
 }
