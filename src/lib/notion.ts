@@ -269,6 +269,12 @@ export async function createQuote(input: CreateQuoteInput): Promise<string> {
     throw new Error("NOTION_ITEMS_DATABASE_ID 환경변수가 설정되지 않았습니다.");
   }
 
+  // items로부터 합계금액 계산
+  const totalAmount = input.items.reduce(
+    (sum, item) => sum + item.quantity * item.unitPrice,
+    0
+  );
+
   const page = await withRetry(() =>
     notion.pages.create({
       parent: { database_id: INVOICES_DB_ID },
@@ -290,6 +296,9 @@ export async function createQuote(input: CreateQuoteInput): Promise<string> {
         },
         [NOTION_PROPERTY_MAP.taxType]: {
           select: { name: input.taxType ?? "포함" },
+        },
+        [NOTION_PROPERTY_MAP.totalAmount]: {
+          number: totalAmount,
         },
       },
     })
@@ -333,6 +342,12 @@ export async function updateQuote(
   notionPageId: string,
   input: UpdateQuoteInput
 ): Promise<void> {
+  // items로부터 합계금액 계산
+  const totalAmount = input.items.reduce(
+    (sum, item) => sum + item.quantity * item.unitPrice,
+    0
+  );
+
   // 1. invoices 페이지 속성 업데이트
   await withRetry(() =>
     notion.pages.update({
@@ -352,6 +367,9 @@ export async function updateQuote(
         },
         [NOTION_PROPERTY_MAP.taxType]: {
           select: { name: input.taxType ?? "포함" },
+        },
+        [NOTION_PROPERTY_MAP.totalAmount]: {
+          number: totalAmount,
         },
       },
     })
