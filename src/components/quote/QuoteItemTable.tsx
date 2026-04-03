@@ -29,38 +29,38 @@ export function QuoteItemTable({ items }: QuoteItemTableProps) {
   );
 
   return (
-    <div className="mb-6 rounded-md border">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
             {/* 항목명 컬럼 */}
-            <TableHead>항목명</TableHead>
+            <TableHead className="text-sm">항목명</TableHead>
             {/* 수량 컬럼 */}
-            <TableHead className="w-[80px] text-right">수량</TableHead>
+            <TableHead className="w-[90px] text-right text-sm">수량</TableHead>
             {/* 단가 컬럼 */}
-            <TableHead className="w-[140px] text-right">단가</TableHead>
+            <TableHead className="w-[160px] text-right text-sm">단가</TableHead>
             {/* 금액 컬럼 */}
-            <TableHead className="w-[140px] text-right">금액</TableHead>
+            <TableHead className="w-[160px] text-right text-sm">금액</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedItems.map((item) => (
             <TableRow key={`${item.itemName}-${item.sortOrder}`}>
               {/* 항목명 */}
-              <TableCell className="font-medium">{item.itemName}</TableCell>
+              <TableCell className="font-medium text-base">{item.itemName}</TableCell>
 
               {/* 수량 */}
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right tabular-nums text-base">
                 {item.quantity}
               </TableCell>
 
               {/* 단가 (formatKRW 적용) */}
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right tabular-nums text-base">
                 {formatKRW(item.unitPrice)}
               </TableCell>
 
               {/* 금액 (formatKRW 적용) */}
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right tabular-nums text-base">
                 {formatKRW(item.amount)}
               </TableCell>
             </TableRow>

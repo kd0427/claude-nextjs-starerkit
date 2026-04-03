@@ -1,5 +1,5 @@
 import { Client, APIResponseError } from "@notionhq/client";
-import type { Quote, QuoteItem, QuoteListItem } from "@/types";
+import type { Quote, QuoteItem, QuoteListItem, CreateQuoteInput, UpdateQuoteInput, QuoteStatus, TaxType } from "@/types";
 
 /** Notion API 클라이언트 싱글턴 */
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
@@ -28,6 +28,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 /** invoices DB ID */
 const INVOICES_DB_ID = process.env.NOTION_DATABASE_ID!;
 
+/** items DB ID */
+const ITEMS_DB_ID = process.env.NOTION_ITEMS_DATABASE_ID!;
+
 /**
  * Notion 실제 속성명 매핑
  * invoices DB: 견적서 번호, 발행일, 상태, 유효기간, 총 금액, 클라이언트명, 항목
@@ -42,6 +45,8 @@ const NOTION_PROPERTY_MAP = {
   totalAmount: "총 금액",
   clientName: "클라이언트명",
   itemsRelation: "항목",
+  // invoices DB - 부가세 구분 (Notion에 수동 추가 필요: Select 타입, 옵션: 포함/별도)
+  taxType: "부가세구분",
   // invoices DB - 공유 링크용 (Notion에 수동 추가 필요)
   shareToken: "ShareToken",
   shareTokenExpiredAt: "ShareTokenExpiredAt",
@@ -66,6 +71,9 @@ function getPropText(prop: Record<string, unknown> | undefined): string {
   }
   if (prop.type === "select") {
     return (prop.select as { name: string } | null)?.name ?? "";
+  }
+  if (prop.type === "status") {
+    return (prop.status as { name: string } | null)?.name ?? "";
   }
   if (prop.type === "formula") {
     const formula = prop.formula as { type: string; string?: string; number?: number };
@@ -121,6 +129,7 @@ function parseNotionPageToQuote(page: any): QuoteListItem | null {
       validUntil,
       status: (getPropText(props[NOTION_PROPERTY_MAP.status]) || "대기") as QuoteListItem["status"],
       totalAmount: getPropNumber(props[NOTION_PROPERTY_MAP.totalAmount]),
+      taxType: (getPropText(props[NOTION_PROPERTY_MAP.taxType]) || "포함") as TaxType,
       shareToken: getPropText(props[NOTION_PROPERTY_MAP.shareToken]) || null,
       shareTokenExpiredAt: getPropDate(props[NOTION_PROPERTY_MAP.shareTokenExpiredAt]),
     };
@@ -157,8 +166,8 @@ function parseNotionItemPage(page: any): QuoteItem | null {
 export async function getQuotes(): Promise<QuoteListItem[]> {
   try {
     const response = await withRetry(() =>
-      notion.dataSources.query({
-        data_source_id: INVOICES_DB_ID,
+      notion.databases.query({
+        database_id: INVOICES_DB_ID,
         sorts: [{ property: NOTION_PROPERTY_MAP.quoteDate, direction: "descending" }],
       })
     );
@@ -177,8 +186,8 @@ export async function getQuotes(): Promise<QuoteListItem[]> {
 export async function getQuoteByShareToken(token: string): Promise<QuoteListItem | null> {
   try {
     const response = await withRetry(() =>
-      notion.dataSources.query({
-        data_source_id: INVOICES_DB_ID,
+      notion.databases.query({
+        database_id: INVOICES_DB_ID,
         filter: {
           property: NOTION_PROPERTY_MAP.shareToken,
           rich_text: { equals: token },
@@ -227,6 +236,196 @@ export async function getQuoteWithItems(notionPageId: string): Promise<Quote | n
   } catch {
     return null;
   }
+}
+
+/**
+ * 다음 견적서 번호 자동 생성 — US-YYYY-MM-NNN 형식
+ * 당월 기존 견적서 번호 중 최대 순번 + 1
+ */
+export async function getNextQuoteNumber(): Promise<string> {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const prefix = `US-${year}-${month}-`;
+
+  const quotes = await getQuotes();
+  const sequences = quotes
+    .filter((q) => q.quoteNumber.startsWith(prefix))
+    .map((q) => {
+      const seq = parseInt(q.quoteNumber.slice(prefix.length), 10);
+      return isNaN(seq) ? 0 : seq;
+    });
+
+  const next = sequences.length > 0 ? Math.max(...sequences) + 1 : 1;
+  return `${prefix}${String(next).padStart(3, "0")}`;
+}
+
+/**
+ * 새 견적서 + 항목 생성
+ * invoices DB에 invoice 페이지 생성 후 items DB에 각 항목 페이지 생성 및 relation 연결
+ */
+export async function createQuote(input: CreateQuoteInput): Promise<string> {
+  if (!ITEMS_DB_ID) {
+    throw new Error("NOTION_ITEMS_DATABASE_ID 환경변수가 설정되지 않았습니다.");
+  }
+
+  const page = await withRetry(() =>
+    notion.pages.create({
+      parent: { database_id: INVOICES_DB_ID },
+      properties: {
+        [NOTION_PROPERTY_MAP.quoteNumber]: {
+          title: [{ type: "text", text: { content: input.quoteNumber } }],
+        },
+        [NOTION_PROPERTY_MAP.clientName]: {
+          rich_text: [{ type: "text", text: { content: input.clientName } }],
+        },
+        [NOTION_PROPERTY_MAP.quoteDate]: {
+          date: { start: input.quoteDate },
+        },
+        [NOTION_PROPERTY_MAP.validUntil]: {
+          date: { start: input.validUntil },
+        },
+        [NOTION_PROPERTY_MAP.status]: {
+          status: { name: input.status },
+        },
+        [NOTION_PROPERTY_MAP.taxType]: {
+          select: { name: input.taxType ?? "포함" },
+        },
+      },
+    })
+  );
+  const notionPageId = page.id;
+
+  await Promise.all(
+    input.items.map((item) =>
+      withRetry(() =>
+        notion.pages.create({
+          parent: { database_id: ITEMS_DB_ID },
+          properties: {
+            [NOTION_PROPERTY_MAP.itemName]: {
+              title: [{ type: "text", text: { content: item.itemName } }],
+            },
+            [NOTION_PROPERTY_MAP.quantity]: {
+              number: item.quantity,
+            },
+            [NOTION_PROPERTY_MAP.unitPrice]: {
+              number: item.unitPrice,
+            },
+            [NOTION_PROPERTY_MAP.amount]: {
+              number: item.quantity * item.unitPrice,
+            },
+            [NOTION_PROPERTY_MAP.invoiceRelation]: {
+              relation: [{ id: notionPageId }],
+            },
+          },
+        })
+      )
+    )
+  );
+
+  return notionPageId;
+}
+
+/**
+ * 견적서 수정 — invoices 속성 업데이트 + 기존 항목 아카이브 후 새 항목 생성
+ */
+export async function updateQuote(
+  notionPageId: string,
+  input: UpdateQuoteInput
+): Promise<void> {
+  // 1. invoices 페이지 속성 업데이트
+  await withRetry(() =>
+    notion.pages.update({
+      page_id: notionPageId,
+      properties: {
+        [NOTION_PROPERTY_MAP.clientName]: {
+          rich_text: [{ type: "text", text: { content: input.clientName } }],
+        },
+        [NOTION_PROPERTY_MAP.quoteDate]: {
+          date: { start: input.quoteDate },
+        },
+        [NOTION_PROPERTY_MAP.validUntil]: {
+          date: { start: input.validUntil },
+        },
+        [NOTION_PROPERTY_MAP.status]: {
+          status: { name: input.status },
+        },
+        [NOTION_PROPERTY_MAP.taxType]: {
+          select: { name: input.taxType ?? "포함" },
+        },
+      },
+    })
+  );
+
+  // 2. 기존 항목 조회 후 아카이브
+  const page = await withRetry(() =>
+    notion.pages.retrieve({ page_id: notionPageId })
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const props = (page as any).properties;
+  const relationProp = props[NOTION_PROPERTY_MAP.itemsRelation];
+  const oldItemIds: string[] =
+    relationProp?.type === "relation"
+      ? relationProp.relation.map((r: { id: string }) => r.id)
+      : [];
+
+  await Promise.all(
+    oldItemIds.map((id) =>
+      withRetry(() => notion.pages.update({ page_id: id, archived: true }))
+    )
+  );
+
+  // 3. 새 항목 생성
+  await Promise.all(
+    input.items.map((item) =>
+      withRetry(() =>
+        notion.pages.create({
+          parent: { database_id: ITEMS_DB_ID },
+          properties: {
+            [NOTION_PROPERTY_MAP.itemName]: {
+              title: [{ type: "text", text: { content: item.itemName } }],
+            },
+            [NOTION_PROPERTY_MAP.quantity]: { number: item.quantity },
+            [NOTION_PROPERTY_MAP.unitPrice]: { number: item.unitPrice },
+            [NOTION_PROPERTY_MAP.amount]: {
+              number: item.quantity * item.unitPrice,
+            },
+            [NOTION_PROPERTY_MAP.invoiceRelation]: {
+              relation: [{ id: notionPageId }],
+            },
+          },
+        })
+      )
+    )
+  );
+}
+
+/**
+ * 견적서 상태만 변경
+ */
+export async function updateQuoteStatus(
+  notionPageId: string,
+  status: QuoteStatus
+): Promise<void> {
+  await withRetry(() =>
+    notion.pages.update({
+      page_id: notionPageId,
+      properties: {
+        [NOTION_PROPERTY_MAP.status]: {
+          status: { name: status },
+        },
+      },
+    })
+  );
+}
+
+/**
+ * 견적서 아카이브 (soft delete)
+ */
+export async function archiveQuote(notionPageId: string): Promise<void> {
+  await withRetry(() =>
+    notion.pages.update({ page_id: notionPageId, archived: true })
+  );
 }
 
 /**

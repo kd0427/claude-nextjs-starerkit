@@ -19,6 +19,13 @@ export type Theme = "light" | "dark" | "system";
 export type QuoteStatus = "대기" | "승인" | "거절" | "만료";
 
 /**
+ * 부가세 구분
+ * "포함": 총액에 부가세가 이미 포함됨 (역산)
+ * "별도": 총액에 부가세를 별도로 추가
+ */
+export type TaxType = "포함" | "별도";
+
+/**
  * 견적서 단일 항목
  * Notion items DB 컬럼: 항목명, 수량, 단가, 금액
  */
@@ -55,6 +62,8 @@ export interface Quote {
   status: QuoteStatus;
   /** 총 금액 */
   totalAmount: number;
+  /** 부가세 구분 (포함/별도) */
+  taxType: TaxType;
   /** 공유 토큰 (Notion에 별도 추가 필요: ShareToken 속성) */
   shareToken: string | null;
   /** 공유 토큰 만료일 (Notion에 별도 추가 필요: ShareTokenExpiredAt 속성) */
@@ -77,4 +86,32 @@ export interface ShareLinkResult {
   url: string;
   token: string;
   expiredAt: Date;
+}
+
+/** 견적서 항목 생성 입력 */
+export interface CreateQuoteItemInput {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** 견적서 생성 입력 */
+export interface CreateQuoteInput {
+  quoteNumber: string;
+  clientName: string;
+  quoteDate: string;
+  validUntil: string;
+  status: QuoteStatus;
+  taxType: TaxType;
+  items: CreateQuoteItemInput[];
+}
+
+/** 견적서 수정 입력 (quoteNumber 제외) */
+export interface UpdateQuoteInput {
+  clientName: string;
+  quoteDate: string;
+  validUntil: string;
+  status: QuoteStatus;
+  taxType: TaxType;
+  items: CreateQuoteItemInput[];
 }

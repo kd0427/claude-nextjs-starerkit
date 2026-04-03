@@ -249,8 +249,16 @@ interface QuotePdfDocumentProps {
 
 /** 견적서 PDF 문서 — @react-pdf/renderer 기반 */
 export function QuotePdfDocument({ quote }: QuotePdfDocumentProps) {
-  const supplyAmount = Math.round(quote.totalAmount / 1.1);
-  const taxAmount = quote.totalAmount - supplyAmount;
+  const isTaxSeparate = quote.taxType === "별도";
+  const supplyAmount = isTaxSeparate
+    ? quote.totalAmount
+    : Math.round(quote.totalAmount / 1.1);
+  const taxAmount = isTaxSeparate
+    ? Math.round(quote.totalAmount * 0.1)
+    : quote.totalAmount - supplyAmount;
+  const totalWithTax = isTaxSeparate
+    ? Math.round(quote.totalAmount * 1.1)
+    : quote.totalAmount;
 
   const sortedItems = [...quote.items].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
@@ -276,7 +284,6 @@ export function QuotePdfDocument({ quote }: QuotePdfDocumentProps) {
           <View style={styles.infoLeft}>
             <Text style={styles.infoLabel}>고객사</Text>
             <Text style={styles.infoValue}>{quote.clientName}</Text>
-            <Text style={styles.statusBadge}>{quote.status}</Text>
           </View>
           <View style={styles.infoRight}>
             <View style={styles.infoRow}>
@@ -324,13 +331,13 @@ export function QuotePdfDocument({ quote }: QuotePdfDocumentProps) {
             <Text style={styles.summaryValue}>{formatAmount(supplyAmount)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>부가세 (10%)</Text>
+            <Text style={styles.summaryLabel}>부가세 (10%){isTaxSeparate ? " 별도" : ""}</Text>
             <Text style={styles.summaryValue}>{formatAmount(taxAmount)}</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryTotalRow}>
             <Text style={styles.summaryTotalLabel}>합계</Text>
-            <Text style={styles.summaryTotalValue}>{formatAmount(quote.totalAmount)}</Text>
+            <Text style={styles.summaryTotalValue}>{formatAmount(totalWithTax)}</Text>
           </View>
         </View>
 

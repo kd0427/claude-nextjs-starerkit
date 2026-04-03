@@ -41,15 +41,25 @@ export default async function QuotePage({ params }: QuotePageProps) {
   );
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-3xl">
-      <div className="flex justify-end mb-4">
-        <PdfDownloadButtonClient quote={{ ...quote, items: sortedItems }} />
-      </div>
-      {/* id="quote-document" — html2canvas PDF 캡처 대상 */}
-      <div id="quote-document" className="bg-background">
-        <QuoteDocument quote={quote} />
-        <QuoteItemTable items={sortedItems} />
-        <QuoteSummary quote={quote} />
+    <div className="min-h-screen bg-muted/30 py-14 px-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* 헤더 바 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
+              <span className="text-base font-bold text-primary-foreground">US</span>
+            </div>
+            <span className="font-semibold text-xl">견적서</span>
+          </div>
+          <PdfDownloadButtonClient quote={{ ...quote, items: sortedItems }} />
+        </div>
+
+        {/* 견적서 카드 */}
+        <div id="quote-document" className="rounded-xl border bg-card shadow-sm p-10 space-y-10">
+          <QuoteDocument quote={quote} />
+          <QuoteItemTable items={sortedItems} />
+          <QuoteSummary quote={quote} />
+        </div>
       </div>
     </div>
   );
