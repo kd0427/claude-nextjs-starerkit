@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { FileText, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -158,9 +158,9 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
                     {formatKRW(quote.totalAmount)}
                   </TableCell>
 
-                  {/* 링크 상태 분기 — 승인 상태에서만 링크 생성 가능 */}
+                  {/* 링크 상태 분기 — 승인 또는 만료 상태에서 링크 사용 가능 */}
                   <TableCell className="text-center">
-                    {quote.status !== "승인" ? (
+                    {quote.status !== "승인" && quote.status !== "만료" ? (
                       <span className="text-xs text-muted-foreground">승인 후 생성</span>
                     ) : quote.shareToken === null ? (
                       <Button
@@ -198,31 +198,44 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
                   </TableCell>
 
                   <TableCell className="text-center">
-                    <Select
-                      value={quote.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(quote.notionPageId, value as QuoteStatus)
-                      }
-                      disabled={isLoading}
-                    >
-                      <SelectTrigger className={`h-7 w-[90px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(["대기", "승인", "거절", "만료"] as QuoteStatus[]).map((s) => (
-                          <SelectItem key={s} value={s}>
-                            <span className={`inline-flex items-center gap-1.5`}>
-                              <span className={`h-2 w-2 rounded-full ${
-                                s === "대기" ? "bg-yellow-500" :
-                                s === "승인" ? "bg-green-500" :
-                                s === "거절" ? "bg-red-500" : "bg-gray-400"
-                              }`} />
-                              {s}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {quote.status === "만료" ? (
+                      <span className={`flex items-center justify-center h-9 w-[90px] text-xs font-medium rounded-full ${STATUS_STYLES["만료"]}`}>
+                        만료
+                      </span>
+                    ) : new Date(quote.validUntil) < new Date() ? (
+                      <button
+                        className="flex items-center justify-center h-9 w-[90px] text-xs font-medium rounded-full whitespace-nowrap bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50 disabled:opacity-50 cursor-pointer"
+                        disabled={isLoading}
+                        onClick={() => handleStatusChange(quote.notionPageId, "만료")}
+                      >
+                        만료 처리
+                      </button>
+                    ) : (
+                      <Select
+                        value={quote.status}
+                        onValueChange={(value) =>
+                          handleStatusChange(quote.notionPageId, value as QuoteStatus)
+                        }
+                        disabled={isLoading}
+                      >
+                        <SelectTrigger className={`h-7 w-[90px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(["대기", "승인", "거절"] as QuoteStatus[]).map((s) => (
+                            <SelectItem key={s} value={s}>
+                              <span className={`inline-flex items-center gap-1.5`}>
+                                <span className={`h-2 w-2 rounded-full ${
+                                  s === "대기" ? "bg-yellow-500" :
+                                  s === "승인" ? "bg-green-500" : "bg-red-500"
+                                }`} />
+                                {s}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </TableCell>
 
                   <TableCell className="text-center">
@@ -265,31 +278,42 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
               {/* 견적서 번호 + 상태 */}
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-muted-foreground">{quote.quoteNumber}</span>
-                <Select
-                  value={quote.status}
-                  onValueChange={(value) =>
-                    handleStatusChange(quote.notionPageId, value as QuoteStatus)
-                  }
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className={`h-7 w-[80px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(["대기", "승인", "거절", "만료"] as QuoteStatus[]).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className={`h-2 w-2 rounded-full ${
-                            s === "대기" ? "bg-yellow-500" :
-                            s === "승인" ? "bg-green-500" :
-                            s === "거절" ? "bg-red-500" : "bg-gray-400"
-                          }`} />
-                          {s}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {quote.status === "만료" ? (
+                  <span className={`flex items-center justify-center h-9 w-[80px] text-xs font-medium rounded-full ${STATUS_STYLES["만료"]}`}>만료</span>
+                ) : new Date(quote.validUntil) < new Date() ? (
+                  <button
+                    className="flex items-center justify-center h-9 w-[80px] text-xs font-medium rounded-full whitespace-nowrap bg-orange-100 text-orange-800 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50 disabled:opacity-50 cursor-pointer"
+                    disabled={isLoading}
+                    onClick={() => handleStatusChange(quote.notionPageId, "만료")}
+                  >
+                    만료 처리
+                  </button>
+                ) : (
+                  <Select
+                    value={quote.status}
+                    onValueChange={(value) =>
+                      handleStatusChange(quote.notionPageId, value as QuoteStatus)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger className={`h-7 w-[80px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(["대기", "승인", "거절"] as QuoteStatus[]).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className={`h-2 w-2 rounded-full ${
+                              s === "대기" ? "bg-yellow-500" :
+                              s === "승인" ? "bg-green-500" : "bg-red-500"
+                            }`} />
+                            {s}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* 고객사명 + 견적일 */}
@@ -304,8 +328,8 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
               <div className="flex items-center justify-between">
                 <span className="font-semibold tabular-nums">{formatKRW(quote.totalAmount)}</span>
                 <div className="flex items-center gap-2">
-                  {/* 링크 액션 */}
-                  {quote.status !== "승인" ? (
+                  {/* 링크 액션 — 승인 또는 만료 상태에서 링크 사용 가능 */}
+                  {quote.status !== "승인" && quote.status !== "만료" ? (
                     <span className="text-xs text-muted-foreground">승인 후 생성</span>
                   ) : quote.shareToken === null ? (
                     <Button
