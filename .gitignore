@@ -46,3 +46,11 @@ shrimp_data/
 # playwright
 .playwright-mcp/
 test-*.png
+
+# claude code / omc
+.claude/
+.omc/
+CLAUDE.md
+AGENTS.md
+**/AGENTS.md
+docs/roadmaps/
