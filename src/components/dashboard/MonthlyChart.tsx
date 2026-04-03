@@ -22,8 +22,10 @@ interface MonthlyChartProps {
 
 /** 원화 축약 포맷 (만원 단위) */
 function formatAxisValue(value: number): string {
+  if (value === 0) return "0";
+  if (value >= 100000000) return `${(value / 100000000).toFixed(1)}억`;
   if (value >= 10000) return `${Math.round(value / 10000)}만`;
-  if (value >= 1000) return `${Math.round(value / 1000)}천`;
+  if (value >= 1000) return `${(value / 1000).toFixed(0)}천`;
   return String(value);
 }
 
@@ -42,7 +44,7 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
       <CardContent>
         <div className="h-[320px] sm:h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+            <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="month"
@@ -51,9 +53,10 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
               />
               <YAxis
                 tickFormatter={formatAxisValue}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 11 }}
                 className="fill-muted-foreground"
-                width={50}
+                width={55}
+                tickCount={6}
               />
               <Tooltip
                 formatter={(value) => [formatTooltipValue(Number(value)), "매출"]}
