@@ -41,8 +41,8 @@ export default async function QuotePage({ params }: QuotePageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-muted/30 py-6 px-4 md:py-14">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-muted/30 py-4 px-2 sm:px-4 md:py-14">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
         {/* 헤더 바 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

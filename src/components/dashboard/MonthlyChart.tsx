@@ -40,9 +40,9 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
         <CardTitle className="text-sm font-semibold">월별 매출 현황</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[320px] sm:h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="month"
