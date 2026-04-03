@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { AdminHeader } from "@/components/layout/AdminHeader";
+import { AdminSidebar } from "@/components/layout/AdminSidebar";
 
-/** 어드민 레이아웃 — 미인증 시 /login 리디렉션 */
+/** 어드민 레이아웃 — 사이드바 + 메인 영역 */
 export default async function AdminLayout({
   children,
 }: {
@@ -12,9 +12,11 @@ export default async function AdminLayout({
   if (!session) redirect("/login");
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AdminHeader />
-      <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
+    <div className="flex">
+      <AdminSidebar />
+      <main className="flex-1 ml-56 p-8 pb-12 flex flex-col items-center">
+        <div className="w-full max-w-6xl">{children}</div>
+      </main>
     </div>
   );
 }
