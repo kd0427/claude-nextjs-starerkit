@@ -26,8 +26,8 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
 
       <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <main className="flex-1 ml-0 md:ml-56 px-2 py-4 sm:px-4 md:px-6 md:py-6 lg:px-8 lg:py-8 pb-12 flex flex-col items-center mt-14 md:mt-0">
-        <div className="w-full max-w-6xl">{children}</div>
+      <main className="flex-1 ml-0 md:ml-56 px-3 py-3 md:px-6 md:py-6 lg:px-8 lg:py-8 pb-12 mt-14 md:mt-0">
+        <div className="w-full max-w-6xl mx-auto">{children}</div>
       </main>
     </div>
   );
