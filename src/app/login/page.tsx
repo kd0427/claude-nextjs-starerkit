@@ -53,22 +53,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">관리자 로그인</h1>
-          <p className="text-sm text-muted-foreground">견적서 관리 시스템에 로그인하세요</p>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-4xl rounded-2xl border bg-card shadow-lg px-24 py-14 space-y-10">
+        <div className="space-y-3 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
+              <span className="text-xl font-bold text-primary-foreground">US</span>
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold tracking-tight">관리자 로그인</h1>
+          <p className="text-lg text-muted-foreground">견적서 관리 시스템에 로그인하세요</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-8">
+          <div className="space-y-3">
+            <Label htmlFor="email" className="text-base font-medium">이메일</Label>
             <Input
               id="email"
               type="email"
               placeholder="admin@example.com"
               autoComplete="email"
               disabled={isSubmitting}
+              className="w-full h-14 text-lg px-4"
               {...register("email")}
             />
             {errors.email && (
@@ -76,14 +82,15 @@ export default function LoginPage() {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
+          <div className="space-y-3">
+            <Label htmlFor="password" className="text-base font-medium">비밀번호</Label>
             <Input
               id="password"
               type="password"
               placeholder="비밀번호 입력"
               autoComplete="current-password"
               disabled={isSubmitting}
+              className="w-full h-14 text-lg px-4"
               {...register("password")}
             />
             {errors.password && (
@@ -92,12 +99,12 @@ export default function LoginPage() {
           </div>
 
           {serverError && (
-            <div className="rounded-md bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{serverError}</p>
+            <div className="rounded-lg bg-destructive/10 p-4">
+              <p className="text-base text-destructive">{serverError}</p>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full h-14 text-lg" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
