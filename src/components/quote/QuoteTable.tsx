@@ -123,41 +123,188 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
   }
 
   return (
-    <div className="overflow-hidden">
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[140px]">견적서 번호</TableHead>
-            <TableHead className="w-[100px]">고객사명</TableHead>
-            <TableHead className="w-[100px]">견적일</TableHead>
-            <TableHead className="w-[120px] text-right">합계금액</TableHead>
-            <TableHead className="w-[180px] text-center">링크</TableHead>
-            <TableHead className="w-[100px] text-center">상태</TableHead>
-            <TableHead className="w-[70px] text-center">관리</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginatedQuotes.map((quote) => {
-            const isExpired =
-              !!quote.shareTokenExpiredAt &&
-              new Date(quote.shareTokenExpiredAt) < new Date();
+    <div>
+      {/* 데스크톱 테이블 (md 이상) */}
+      <div className="hidden md:block overflow-x-auto">
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[140px]">견적서 번호</TableHead>
+              <TableHead className="w-[100px]">고객사명</TableHead>
+              <TableHead className="w-[100px]">견적일</TableHead>
+              <TableHead className="w-[120px] text-right">합계금액</TableHead>
+              <TableHead className="w-[180px] text-center">링크</TableHead>
+              <TableHead className="w-[100px] text-center">상태</TableHead>
+              <TableHead className="w-[70px] text-center">관리</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedQuotes.map((quote) => {
+              const isExpired =
+                !!quote.shareTokenExpiredAt &&
+                new Date(quote.shareTokenExpiredAt) < new Date();
 
-            const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/quote/${quote.shareToken}`;
-            const isLoading = loadingId === quote.notionPageId;
+              const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/quote/${quote.shareToken}`;
+              const isLoading = loadingId === quote.notionPageId;
 
-            return (
-              <TableRow key={quote.notionPageId} className="hover:bg-muted/50">
-                <TableCell className="font-mono text-xs font-medium text-muted-foreground">{quote.quoteNumber}</TableCell>
-                <TableCell className="font-medium">{quote.clientName}</TableCell>
-                <TableCell className="text-muted-foreground">
+              return (
+                <TableRow key={quote.notionPageId} className="hover:bg-muted/50">
+                  <TableCell className="font-mono text-xs font-medium text-muted-foreground">{quote.quoteNumber}</TableCell>
+                  <TableCell className="font-medium">{quote.clientName}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(quote.quoteDate).toLocaleDateString("ko-KR")}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    {formatKRW(quote.totalAmount)}
+                  </TableCell>
+
+                  {/* 링크 상태 분기 — 승인 상태에서만 링크 생성 가능 */}
+                  <TableCell className="text-center">
+                    {quote.status !== "승인" ? (
+                      <span className="text-xs text-muted-foreground">승인 후 생성</span>
+                    ) : quote.shareToken === null ? (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        disabled={isLoading}
+                        onClick={() => handleCreateLink(quote.notionPageId)}
+                      >
+                        {isLoading ? "생성 중..." : "링크 생성"}
+                      </Button>
+                    ) : isExpired ? (
+                      <div className="flex items-center justify-center gap-1.5">
+                        <StatusBadge
+                          shareToken={quote.shareToken}
+                          shareTokenExpiredAt={quote.shareTokenExpiredAt}
+                        />
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          disabled={isLoading}
+                          onClick={() => handleCreateLink(quote.notionPageId)}
+                        >
+                          {isLoading ? "..." : "재생성"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5">
+                        <StatusBadge
+                          shareToken={quote.shareToken}
+                          shareTokenExpiredAt={quote.shareTokenExpiredAt}
+                        />
+                        <CopyButton text={shareUrl} label="복사" />
+                      </div>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    <Select
+                      value={quote.status}
+                      onValueChange={(value) =>
+                        handleStatusChange(quote.notionPageId, value as QuoteStatus)
+                      }
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className={`h-7 w-[90px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(["대기", "승인", "거절", "만료"] as QuoteStatus[]).map((s) => (
+                          <SelectItem key={s} value={s}>
+                            <span className={`inline-flex items-center gap-1.5`}>
+                              <span className={`h-2 w-2 rounded-full ${
+                                s === "대기" ? "bg-yellow-500" :
+                                s === "승인" ? "bg-green-500" :
+                                s === "거절" ? "bg-red-500" : "bg-gray-400"
+                              }`} />
+                              {s}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon-xs" asChild>
+                        <Link href={`/quotes/${quote.notionPageId}/edit`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={isLoading}
+                        onClick={() => handleDelete(quote.notionPageId)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 모바일 카드 리스트 (md 미만) */}
+      <div className="md:hidden divide-y">
+        {paginatedQuotes.map((quote) => {
+          const isExpired =
+            !!quote.shareTokenExpiredAt &&
+            new Date(quote.shareTokenExpiredAt) < new Date();
+
+          const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/quote/${quote.shareToken}`;
+          const isLoading = loadingId === quote.notionPageId;
+
+          return (
+            <div key={quote.notionPageId} className="p-4 space-y-3">
+              {/* 견적서 번호 + 상태 */}
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-muted-foreground">{quote.quoteNumber}</span>
+                <Select
+                  value={quote.status}
+                  onValueChange={(value) =>
+                    handleStatusChange(quote.notionPageId, value as QuoteStatus)
+                  }
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className={`h-7 w-[80px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["대기", "승인", "거절", "만료"] as QuoteStatus[]).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className={`h-2 w-2 rounded-full ${
+                            s === "대기" ? "bg-yellow-500" :
+                            s === "승인" ? "bg-green-500" :
+                            s === "거절" ? "bg-red-500" : "bg-gray-400"
+                          }`} />
+                          {s}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 고객사명 + 견적일 */}
+              <div>
+                <p className="font-medium">{quote.clientName}</p>
+                <p className="text-sm text-muted-foreground">
                   {new Date(quote.quoteDate).toLocaleDateString("ko-KR")}
-                </TableCell>
-                <TableCell className="text-right tabular-nums font-semibold">
-                  {formatKRW(quote.totalAmount)}
-                </TableCell>
+                </p>
+              </div>
 
-                {/* 링크 상태 분기 — 승인 상태에서만 링크 생성 가능 */}
-                <TableCell className="text-center">
+              {/* 합계금액 + 액션 버튼 */}
+              <div className="flex items-center justify-between">
+                <span className="font-semibold tabular-nums">{formatKRW(quote.totalAmount)}</span>
+                <div className="flex items-center gap-2">
+                  {/* 링크 액션 */}
                   {quote.status !== "승인" ? (
                     <span className="text-xs text-muted-foreground">승인 후 생성</span>
                   ) : quote.shareToken === null ? (
@@ -170,7 +317,7 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
                       {isLoading ? "생성 중..." : "링크 생성"}
                     </Button>
                   ) : isExpired ? (
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
                       <StatusBadge
                         shareToken={quote.shareToken}
                         shareTokenExpiredAt={quote.shareTokenExpiredAt}
@@ -185,7 +332,7 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center gap-1.5">
                       <StatusBadge
                         shareToken={quote.shareToken}
                         shareTokenExpiredAt={quote.shareTokenExpiredAt}
@@ -193,63 +340,32 @@ export function QuoteTable({ quotes }: QuoteTableProps) {
                       <CopyButton text={shareUrl} label="복사" />
                     </div>
                   )}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  <Select
-                    value={quote.status}
-                    onValueChange={(value) =>
-                      handleStatusChange(quote.notionPageId, value as QuoteStatus)
-                    }
+                  {/* 편집 버튼 */}
+                  <Button variant="ghost" size="icon-xs" asChild>
+                    <Link href={`/quotes/${quote.notionPageId}/edit`}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                  {/* 삭제 버튼 */}
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="text-muted-foreground hover:text-destructive"
                     disabled={isLoading}
+                    onClick={() => handleDelete(quote.notionPageId)}
                   >
-                    <SelectTrigger className={`h-7 w-[90px] text-xs font-medium border-0 rounded-full justify-center gap-0 ${STATUS_STYLES[quote.status]}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(["대기", "승인", "거절", "만료"] as QuoteStatus[]).map((s) => (
-                        <SelectItem key={s} value={s}>
-                          <span className={`inline-flex items-center gap-1.5`}>
-                            <span className={`h-2 w-2 rounded-full ${
-                              s === "대기" ? "bg-yellow-500" :
-                              s === "승인" ? "bg-green-500" :
-                              s === "거절" ? "bg-red-500" : "bg-gray-400"
-                            }`} />
-                            {s}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="icon-xs" asChild>
-                      <Link href={`/quotes/${quote.notionPageId}/edit`}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="text-muted-foreground hover:text-destructive"
-                      disabled={isLoading}
-                      onClick={() => handleDelete(quote.notionPageId)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-
-      {/* 페이징 */}
+      {/* 페이징 (모바일/데스크톱 공통) */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t px-4 py-3">
+        <div className="flex flex-col gap-2 sm:flex-row items-center justify-between border-t px-4 py-3">
           <p className="text-xs text-muted-foreground">
             총 {quotes.length}건 중 {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, quotes.length)}건
           </p>

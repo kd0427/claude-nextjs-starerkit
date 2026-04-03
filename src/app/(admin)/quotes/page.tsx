@@ -36,7 +36,7 @@ export default async function QuotesPage() {
   const monthlyData = getMonthlyRevenue(quotes);
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-4 sm:space-y-6 max-w-6xl w-full">
       {/* 페이지 헤더 */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">대시보드</h1>

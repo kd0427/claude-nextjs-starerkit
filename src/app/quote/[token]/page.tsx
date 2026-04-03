@@ -41,7 +41,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-muted/30 py-14 px-4">
+    <div className="min-h-screen bg-muted/30 py-6 px-4 md:py-14">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* 헤더 바 */}
         <div className="flex items-center justify-between">
@@ -55,7 +55,7 @@ export default async function QuotePage({ params }: QuotePageProps) {
         </div>
 
         {/* 견적서 카드 */}
-        <div id="quote-document" className="rounded-xl border bg-card shadow-sm p-10 space-y-10">
+        <div id="quote-document" className="rounded-xl border bg-card shadow-sm p-4 space-y-6 sm:p-6 sm:space-y-8 md:p-10 md:space-y-10">
           <QuoteDocument quote={quote} />
           <QuoteItemTable items={sortedItems} />
           <QuoteSummary quote={quote} />

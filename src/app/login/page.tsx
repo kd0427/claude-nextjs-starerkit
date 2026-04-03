@@ -54,15 +54,15 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-4xl rounded-2xl border bg-card shadow-lg px-24 py-14 space-y-10">
+      <div className="w-full max-w-4xl rounded-2xl border bg-card shadow-lg px-6 py-8 sm:px-12 sm:py-10 md:px-16 lg:px-24 lg:py-14 space-y-6 sm:space-y-8 lg:space-y-10">
         <div className="space-y-3 text-center">
           <div className="flex justify-center mb-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary">
               <span className="text-xl font-bold text-primary-foreground">US</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight">관리자 로그인</h1>
-          <p className="text-lg text-muted-foreground">견적서 관리 시스템에 로그인하세요</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">관리자 로그인</h1>
+          <p className="text-base sm:text-lg text-muted-foreground">견적서 관리 시스템에 로그인하세요</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-8">

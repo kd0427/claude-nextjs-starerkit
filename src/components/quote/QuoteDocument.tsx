@@ -17,18 +17,18 @@ export function QuoteDocument({ quote }: QuoteDocumentProps) {
       {/* 견적서 번호 + 회사명 */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             {quote.quoteNumber}
           </h1>
           <p className="text-base text-muted-foreground mt-1">견적서</p>
         </div>
-        <span className="text-2xl font-bold tracking-tight">어스</span>
+        <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight">어스</span>
       </div>
 
-      <Separator className="my-8" />
+      <Separator className="my-4 sm:my-6 md:my-8" />
 
       {/* 정보 그리드 */}
-      <div className="grid grid-cols-2 gap-x-10 gap-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-10 sm:gap-y-5">
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-1">고객사</p>
           <p className="text-base font-semibold">{quote.clientName}</p>

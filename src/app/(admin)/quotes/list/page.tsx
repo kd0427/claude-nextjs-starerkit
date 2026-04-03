@@ -10,9 +10,9 @@ export default async function QuoteListPage() {
   const quotes = await getQuotes();
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-4 sm:space-y-6 max-w-6xl w-full">
       {/* 페이지 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">견적서 목록</h1>
           <p className="text-sm text-muted-foreground mt-1">

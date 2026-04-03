@@ -28,15 +28,15 @@ export function QuoteSummary({ quote }: QuoteSummaryProps) {
 
   return (
     <div className="flex flex-col items-end gap-2.5 text-base">
-      <div className="flex items-center gap-14 w-[280px] justify-between">
+      <div className="flex items-center gap-4 sm:gap-14 w-full sm:w-[280px] justify-between">
         <span className="text-muted-foreground">공급가액</span>
         <span className="tabular-nums">{formatKRW(supplyAmount)}</span>
       </div>
-      <div className="flex items-center gap-14 w-[280px] justify-between">
+      <div className="flex items-center gap-4 sm:gap-14 w-full sm:w-[280px] justify-between">
         <span className="text-muted-foreground">부가세 (10%){isTaxSeparate ? " 별도" : ""}</span>
         <span className="tabular-nums">{formatKRW(taxAmount)}</span>
       </div>
-      <div className="flex items-center gap-14 w-[280px] justify-between font-bold text-lg border-t pt-3 mt-1">
+      <div className="flex items-center gap-4 sm:gap-14 w-full sm:w-[280px] justify-between font-bold text-lg border-t pt-3 mt-1">
         <span>합계</span>
         <span className="tabular-nums text-primary">{formatKRW(totalWithTax)}</span>
       </div>

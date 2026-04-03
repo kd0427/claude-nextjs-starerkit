@@ -13,11 +13,37 @@ const navItems = [
   { label: "새 견적서", href: "/quotes/new", icon: Plus },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
 
+  const handleNavClick = () => {
+    onClose?.();
+  };
+
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-56 flex-col border-r bg-card">
+    <>
+      {/* 모바일 오버레이 배경 */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* 데스크톱: 항상 표시 / 모바일: isOpen일 때만 표시 */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 h-screen w-56 flex-col border-r bg-card transition-transform duration-300",
+          "hidden md:flex",
+          isOpen && "flex translate-x-0",
+          !isOpen && "-translate-x-full md:translate-x-0"
+        )}
+      >
       {/* 로고 */}
       <div className="flex h-14 items-center gap-2 px-5 border-b">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
@@ -40,6 +66,7 @@ export function AdminSidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleNavClick}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
@@ -68,6 +95,7 @@ export function AdminSidebar() {
           로그아웃
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
