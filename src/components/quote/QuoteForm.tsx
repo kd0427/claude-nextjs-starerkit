@@ -112,7 +112,7 @@ export function QuoteForm({
         return;
       }
       toast.success(isEdit ? "견적서가 수정되었습니다" : "견적서가 생성되었습니다");
-      router.push("/quotes");
+      router.push("/quotes/list");
     } catch {
       toast.error("네트워크 오류가 발생했습니다");
     }
@@ -358,7 +358,7 @@ export function QuoteForm({
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/quotes")}
+            onClick={() => router.push("/quotes/list")}
           >
             취소
           </Button>
