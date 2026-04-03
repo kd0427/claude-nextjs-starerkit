@@ -13,7 +13,7 @@ export function AdminHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
-      <div className="container flex h-14 items-center justify-between px-4">
+      <div className="max-w-6xl mx-auto flex h-14 items-center justify-between px-6">
         <span className="font-semibold">견적서 관리</span>
         <Button variant="ghost" size="sm" onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
